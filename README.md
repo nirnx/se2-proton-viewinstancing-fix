@@ -18,7 +18,7 @@ Proton / vkd3d-proton. Neither Keen Software House nor the vkd3d-proton project 
   ```
 
 This affected every Proton build tried on NVIDIA (Proton Experimental 11.0-20261014, GE-Proton 11,
-Proton-CachyOS), and the same error is reported on AMD/RADV in vkd3d-proton#3384. Clearing shader
+Proton-CachyOS), and the same error is reported on AMD/RADV in [vkd3d-proton#3384](https://github.com/HansKristian-Work/vkd3d-proton/issues/3384). Clearing shader
 caches does not help.
 
 ## Cause
