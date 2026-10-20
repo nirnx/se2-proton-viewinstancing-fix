@@ -17,8 +17,9 @@ Proton / vkd3d-proton. Neither Keen Software House nor the vkd3d-proton project 
   d3d12_pipeline_state_init_graphics_create_info: Unsupported view instancing configuration used.
   ```
 
-This affects every Proton build we tried (Proton Experimental 11.0-20261014, GE-Proton 11,
-Proton-CachyOS) on both NVIDIA and AMD. Clearing shader caches does not help.
+This affected every Proton build tried on NVIDIA (Proton Experimental 11.0-20261014, GE-Proton 11,
+Proton-CachyOS), and the same error is reported on AMD/RADV in vkd3d-proton#3384. Clearing shader
+caches does not help.
 
 ## Cause
 
