@@ -43,51 +43,47 @@ Upstream report: [vkd3d-proton#3384](https://github.com/HansKristian-Work/vkd3d-
 
 ## The fix
 
-`se2-viewinstancing-fix.py` patches **your own copy** of `Game2/VRage.Render12.dll`. It changes 12
-bytes of IL in `DeviceWrap`'s constructor so that `IsViewInstancingSupported` is always `false`, and
-the renderer takes its own fallback path. No game files are distributed here.
+`se2-fix.sh` patches **your own copy** of `Game2/VRage.Render12.dll`. It changes 12 bytes of IL in
+`DeviceWrap`'s constructor so that `IsViewInstancingSupported` is always `false`, and the renderer
+takes its own fallback path. No game files are distributed here.
 
-The script:
-- finds the game through your Steam libraries, or takes `--game-dir`,
+The script needs only bash and coreutils (present on any Linux distro and on the Steam Deck). It:
+- finds the game in your Steam libraries (native or Flatpak Steam),
 - refuses to touch any DLL whose SHA-256 is not the known 4.0.0.3151 build,
 - keeps the original as `VRage.Render12.dll.orig` and can restore it.
 
-## Usage
+## How to use it
 
-Requires Python 3, which ships with most Linux distributions. Close the game first.
+**1.** Close the game. Open a terminal (on the Steam Deck: Desktop Mode → Konsole) and run:
 
 ```sh
-git clone https://github.com/nirnx/se2-proton-viewinstancing-fix
-cd se2-proton-viewinstancing-fix
-./se2-viewinstancing-fix.py
+curl -fsSL https://raw.githubusercontent.com/nirnx/se2-proton-viewinstancing-fix/main/se2-fix.sh | bash
 ```
 
-Then set the game's **Launch Options** in Steam (right-click Space Engineers 2 → Properties →
-General):
+**2.** In Steam, right-click **Space Engineers 2** → **Properties** → **General**, and put this in
+**Launch Options**:
 
 ```
 DOTNET_ReadyToRunExcludeList=VRage.Render12 %command%
 ```
 
-This variable is **required**. `VRage.Render12.dll` ships precompiled (ReadyToRun), and without it
-.NET runs the precompiled native code and ignores the patched IL. The variable only makes .NET JIT
-this one assembly, so the first start of the renderer is a little slower.
+**3.** Play. Use Proton Experimental or a recent GE-Proton. The fix was tested on Proton
+Experimental 11.0-20261014 with an RTX 5090.
 
-Use Proton Experimental or a recent GE-Proton. The patch was tested on Proton Experimental
-11.0-20261014 with an RTX 5090.
+The launch option is **required**. `VRage.Render12.dll` ships precompiled (ReadyToRun), and without
+it .NET runs the precompiled native code and ignores the patch. It only makes .NET JIT this one
+assembly, so the first start of the renderer is a little slower.
 
-Other commands:
-
-```sh
-./se2-viewinstancing-fix.py --status    # show whether the DLL is original or patched
-./se2-viewinstancing-fix.py --restore   # put the original DLL back
-```
-
-If the game is installed somewhere unusual:
+### Undo / check
 
 ```sh
-./se2-viewinstancing-fix.py --game-dir /path/to/steamapps/common/SpaceEngineers2
+curl -fsSL https://raw.githubusercontent.com/nirnx/se2-proton-viewinstancing-fix/main/se2-fix.sh | bash -s -- --restore
+curl -fsSL https://raw.githubusercontent.com/nirnx/se2-proton-viewinstancing-fix/main/se2-fix.sh | bash -s -- --status
 ```
+
+If you would rather read the script before running it, download `se2-fix.sh`, look at it, and run
+`bash se2-fix.sh` (or `bash se2-fix.sh --restore` / `--status`). If the game is not found, run it
+with `SE2_DIR=/path/to/steamapps/common/SpaceEngineers2 bash se2-fix.sh`.
 
 ## Notes
 
@@ -96,7 +92,7 @@ If the game is installed somewhere unusual:
   If not, the patch site needs to be found again for the new build.
 - Point-light cube shadows use the game's fallback path instead of view instancing. Expect at most a
   small performance difference in scenes with many shadowed point lights.
-- To undo, run `--restore` (or verify the game files in Steam) and remove the launch option.
+- To undo, run the undo command (or verify the game files in Steam) and remove the launch option.
 - Once Keen or vkd3d-proton fixes this, stop using the patch.
 
 ## License
