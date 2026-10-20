@@ -35,11 +35,28 @@ failed and draws it with the pink error material. The shadow passes that depend 
 the end of loading.
 
 The game already contains a non-view-instanced fallback. It uses that fallback when the device
-reports `ViewInstancingTier` below Tier 1. No launch option, game setting or vkd3d-proton
-environment variable can switch the game to it. The `ForceCubeShadowFallback` shadow setting is not
-enough, because materials still build the view-instanced variants.
+reports `ViewInstancingTier` below Tier 1. On current Proton, no launch option, game setting or
+vkd3d-proton environment variable can switch the game to it. The `ForceCubeShadowFallback` shadow
+setting is not enough, because materials still build the view-instanced variants.
 
 Upstream report: [vkd3d-proton#3384](https://github.com/HansKristian-Work/vkd3d-proton/issues/3384).
+
+### Why older Proton (Proton 10 / GE-Proton10-34) works
+
+Players report that rolling back to Proton 10 or GE-Proton10-34 fixes the pink screen. That works
+for the same reason this patch does. In vkd3d-proton **v3.0.1** and earlier, view instancing was
+only advertised for games with a per-application override or with
+`VKD3D_CONFIG=enable_experimental_features`. For every other game, `ViewInstancingTier` was reported
+as `NOT_SUPPORTED` (the source comment says "Currently not supported"), so SE2 took its fallback
+path. Later vkd3d-proton (the build in Proton Experimental 11.0-20261014 is `0bb64c5`) advertises
+Tier 2 unconditionally whenever the Vulkan features are present. SE2 then takes the view-instanced
+path, which vkd3d-proton can't handle yet.
+
+So you have two options:
+- **Stay on an older Proton** that ships vkd3d-proton ≤ 3.0.1. No game files are modified, but you
+  lose newer Proton fixes. Players have reported other problems on those versions (crashes,
+  fullscreen issues).
+- **Use this patch** to stay on current Proton.
 
 ## The fix
 
