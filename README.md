@@ -3,6 +3,18 @@
 An unofficial workaround for **Space Engineers 2 4.0.0.3151** ("Hostile Encounters") on Linux with
 Proton / vkd3d-proton. Neither Keen Software House nor the vkd3d-proton project made it or endorses it.
 
+## Contents
+
+- [Symptoms](#symptoms)
+- [Cause](#cause)
+  - [Why older Proton (Proton 10 / GE-Proton10-34) works](#why-older-proton-proton-10--ge-proton10-34-works)
+- [The fix](#the-fix)
+- [How to use it](#how-to-use-it)
+  - [Undo / check](#undo--check)
+  - [Manual mode (without curl, or with a specific file)](#manual-mode-without-curl-or-with-a-specific-file)
+- [Notes](#notes)
+- [License](#license)
+
 ## Symptoms
 
 - Most of the world renders **pink/purple** after loading a save.
