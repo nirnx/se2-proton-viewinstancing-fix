@@ -5,11 +5,13 @@
 # instancing as unsupported and uses its built-in fallback (see README.md).
 # Needs only bash and coreutils.
 #
-#   se2-fix.sh             apply the fix
-#   se2-fix.sh --restore   undo it
-#   se2-fix.sh --status    show what is installed
+#   se2-fix.sh [PATH]             apply the fix
+#   se2-fix.sh --restore [PATH]   undo it
+#   se2-fix.sh --status [PATH]    show what is installed
 #
-# Set SE2_DIR=/path/to/steamapps/common/SpaceEngineers2 if auto-detection fails.
+# PATH is optional and may be the VRage.Render12.dll file itself, the Game2
+# folder, or the SpaceEngineers2 install folder. Without it the game is found
+# through your Steam libraries (SE2_DIR=/path/to/SpaceEngineers2 also works).
 set -euo pipefail
 
 LAUNCH_OPTIONS='DOTNET_ReadyToRunExcludeList=VRage.Render12 %command%'
@@ -56,12 +58,33 @@ and put this in "Launch Options":
 EOF
 }
 
-game_dir="${SE2_DIR:-}"
-[[ -n "$game_dir" ]] || game_dir="$(find_game_dir)" \
-    || die "Space Engineers 2 not found. Run again with SE2_DIR=/path/to/steamapps/common/SpaceEngineers2"
-dll="$game_dir/Game2/VRage.Render12.dll"
+mode="apply"
+target=""
+for arg in "$@"; do
+    case "$arg" in
+        --status)  mode="status" ;;
+        --restore) mode="restore" ;;
+        -h|--help) sed -n '2,14p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -*)        die "Unknown option: $arg (use --status or --restore)" ;;
+        *)         [[ -z "$target" ]] || die "Only one path can be given"; target="$arg" ;;
+    esac
+done
+
+target="${target:-${SE2_DIR:-}}"
+if [[ -z "$target" ]]; then
+    target="$(find_game_dir)" \
+        || die "Space Engineers 2 not found. Pass the path, e.g.: se2-fix.sh /path/to/SpaceEngineers2/Game2/VRage.Render12.dll"
+fi
+if [[ -f "$target" ]]; then
+    dll="$target"
+elif [[ -f "$target/VRage.Render12.dll" ]]; then
+    dll="$target/VRage.Render12.dll"
+elif [[ -f "$target/Game2/VRage.Render12.dll" ]]; then
+    dll="$target/Game2/VRage.Render12.dll"
+else
+    die "VRage.Render12.dll not found at: $target"
+fi
 backup="$dll.orig"
-[[ -f "$dll" ]] || die "$dll not found"
 
 if pgrep -f 'SpaceEngineers2\.exe' >/dev/null 2>&1; then
     die "Space Engineers 2 is running. Close it first."
@@ -74,25 +97,23 @@ case "$current" in
     *)               state="unknown" ;;
 esac
 
-case "${1:-}" in
-    --status)
-        echo "Game:   $game_dir"
-        echo "DLL:    $state$([[ $state != unknown ]] && echo " (build $BUILD)")"
+case "$mode" in
+    status)
+        echo "DLL:    $dll"
+        echo "State:  $state$([[ $state != unknown ]] && echo " (build $BUILD)")"
         echo "Backup: $([[ -f "$backup" ]] && echo present || echo none)"
         exit 0
         ;;
-    --restore)
+    restore)
         [[ -f "$backup" ]] || die "No backup found. Use Steam's 'Verify integrity of game files' instead."
         cp -p "$backup" "$dll"
         rm -f "$backup"
         echo "Original DLL restored. Remove the DOTNET_ReadyToRunExcludeList launch option in Steam."
         exit 0
         ;;
-    "") ;;
-    *) die "Unknown option: $1 (use --status or --restore)" ;;
 esac
 
-echo "Game: $game_dir"
+echo "DLL: $dll"
 if [[ "$state" == "patched" ]]; then
     echo "Already patched. Nothing to do."
     print_launch_options

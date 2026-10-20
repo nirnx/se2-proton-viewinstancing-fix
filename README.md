@@ -81,9 +81,19 @@ curl -fsSL https://raw.githubusercontent.com/nirnx/se2-proton-viewinstancing-fix
 curl -fsSL https://raw.githubusercontent.com/nirnx/se2-proton-viewinstancing-fix/main/se2-fix.sh | bash -s -- --status
 ```
 
-If you would rather read the script before running it, download `se2-fix.sh`, look at it, and run
-`bash se2-fix.sh` (or `bash se2-fix.sh --restore` / `--status`). If the game is not found, run it
-with `SE2_DIR=/path/to/steamapps/common/SpaceEngineers2 bash se2-fix.sh`.
+### Manual mode (without curl, or with a specific file)
+
+Download [`se2-fix.sh`](se2-fix.sh) (or `git clone` this repo), read it if you like, and pass the
+DLL to patch. The path can be the DLL itself, the `Game2` folder or the `SpaceEngineers2` folder:
+
+```sh
+bash se2-fix.sh ~/.local/share/Steam/steamapps/common/SpaceEngineers2/Game2/VRage.Render12.dll
+bash se2-fix.sh --status /path/to/SpaceEngineers2
+bash se2-fix.sh --restore /path/to/SpaceEngineers2/Game2
+```
+
+Without a path, the script finds the game in your Steam libraries, just like the one-liner.
+In Steam you can find the folder via **Manage → Browse local files**.
 
 ## Notes
 
