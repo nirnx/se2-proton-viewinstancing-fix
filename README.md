@@ -1,6 +1,6 @@
 # Space Engineers 2 on Proton: pink/purple materials and loading hang fix
 
-An unofficial workaround for **Space Engineers 2 4.0.0.3151** ("Hostile Encounters") on Linux with
+An unofficial workaround for **Space Engineers 2** ("Hostile Encounters" update; supported builds: **4.0.0.3151, 4.0.0.3155**) on Linux with
 Proton / vkd3d-proton. Neither Keen Software House nor the vkd3d-proton project made it or endorses it.
 
 ## Contents
@@ -78,7 +78,7 @@ takes its own fallback path. No game files are distributed here.
 
 The script needs only bash and coreutils (present on any Linux distro and on the Steam Deck). It:
 - finds the game in your Steam libraries (native or Flatpak Steam),
-- refuses to touch any DLL whose SHA-256 is not the known 4.0.0.3151 build,
+- refuses to touch any DLL whose SHA-256 is not a known build (4.0.0.3151, 4.0.0.3155),
 - keeps the original as `VRage.Render12.dll.orig` and can restore it.
 
 ## How to use it
@@ -127,8 +127,10 @@ In Steam you can find the folder via **Manage → Browse local files**.
 ## Notes
 
 - **Game updates and "Verify integrity of game files" replace the DLL** and remove the patch. If the
-  game was updated, the script refuses to patch the new build. Check whether the bug is fixed first.
-  If not, the patch site needs to be found again for the new build.
+  game was updated, just run the one-liner again: if the new build is supported, it patches it.
+  If the build is not supported yet, the script changes nothing and lists the supported builds.
+  Support for a new build is added here when it comes out, unless Keen or vkd3d-proton has fixed
+  the bug by then. A backup left over from an older build is never restored over a newer game.
 - Point-light cube shadows use the game's fallback path instead of view instancing. Expect at most a
   small performance difference in scenes with many shadowed point lights.
 - To undo, run the undo command (or verify the game files in Steam) and remove the launch option.

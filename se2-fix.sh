@@ -16,14 +16,15 @@ set -euo pipefail
 
 LAUNCH_OPTIONS='DOTNET_ReadyToRunExcludeList=VRage.Render12 %command%'
 
-# Known game build 4.0.0.3151.
-BUILD="4.0.0.3151"
-ORIGINAL_SHA="33e7dded4218720ddb50ac2410c2da037ca39de91ec9933d47be3363b5fdcb8e"
-PATCHED_SHA="eba4d503a669a9e73e7aab4729db6a531f18e2b26cdae28f3fb68e211694b489"
-OFFSET=$((0x47F88B))
-# ldarg.0; ldloc.s V_6; ldfld ViewInstancingTier; ldc.i4.1; clt; ldc.i4.0; ceq
-EXPECTED="0211067b701e000a17fe0416fe01"
-# ldarg.0; ldc.i4.0; nop x12
+# Supported game builds: "version original_sha256 patched_sha256 offset expected_bytes".
+# expected_bytes is the IL in DeviceWrap's constructor that computes
+#   ldarg.0; ldloc.s V_6; ldfld ViewInstancingTier; ldc.i4.1; clt; ldc.i4.0; ceq
+# right before `call set_IsViewInstancingSupported`.
+BUILDS=(
+    "4.0.0.3151 33e7dded4218720ddb50ac2410c2da037ca39de91ec9933d47be3363b5fdcb8e eba4d503a669a9e73e7aab4729db6a531f18e2b26cdae28f3fb68e211694b489 0x47F88B 0211067b701e000a17fe0416fe01"
+    "4.0.0.3155 87352623f843bb7c3b7c994ff43970000ac7ceffc46bd38f2c21cc4623986e65 bdff5aa6404302e2654081a4d96c361c69120a0c0a98a46d7b69cb7d2bbf6c7a 0x47F9D3 0211067b731e000a17fe0416fe01"
+)
+# ldarg.0; ldc.i4.0; nop x12 (same length as expected_bytes)
 REPLACEMENT='\x02\x16\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -90,22 +91,54 @@ if pgrep -f 'SpaceEngineers2\.exe' >/dev/null 2>&1; then
     die "Space Engineers 2 is running. Close it first."
 fi
 
-current="$(sha "$dll")"
-case "$current" in
-    "$ORIGINAL_SHA") state="original" ;;
-    "$PATCHED_SHA")  state="patched" ;;
-    *)               state="unknown" ;;
-esac
+# Sets STATE (original/patched/unknown) and the BUILD_* fields for the given hash.
+identify() {
+    local entry version orig patched offset expected
+    STATE="unknown"
+    for entry in "${BUILDS[@]}"; do
+        read -r version orig patched offset expected <<<"$entry"
+        if [[ "$1" == "$orig" || "$1" == "$patched" ]]; then
+            [[ "$1" == "$orig" ]] && STATE="original" || STATE="patched"
+            BUILD_VERSION="$version" BUILD_ORIG="$orig" BUILD_PATCHED="$patched"
+            BUILD_OFFSET=$((offset)) BUILD_EXPECTED="$expected"
+            return 0
+        fi
+    done
+    return 1
+}
+
+supported="$(for e in "${BUILDS[@]}"; do echo -n "${e%% *} "; done)"
+BUILD_ORIG=""
+identify "$(sha "$dll")" || true
+state="$STATE"
+
+# A backup only belongs to this install if it is the original DLL of the same build;
+# one left over from an older build must never be restored over a newer game.
+backup_state="none"
+if [[ -f "$backup" ]]; then
+    if [[ -n "$BUILD_ORIG" && "$(sha "$backup")" == "$BUILD_ORIG" ]]; then
+        backup_state="valid"
+    else
+        backup_state="stale (from another game build, ignored)"
+    fi
+fi
 
 case "$mode" in
     status)
         echo "DLL:    $dll"
-        echo "State:  $state$([[ $state != unknown ]] && echo " (build $BUILD)")"
-        echo "Backup: $([[ -f "$backup" ]] && echo present || echo none)"
+        echo "State:  $state$([[ $state != unknown ]] && echo " (build $BUILD_VERSION)")"
+        echo "Backup: $backup_state"
+        [[ "$state" != unknown ]] || echo "Supported builds: $supported"
         exit 0
         ;;
     restore)
-        [[ -f "$backup" ]] || die "No backup found. Use Steam's 'Verify integrity of game files' instead."
+        if [[ "$state" == "original" ]]; then
+            echo "The DLL is already the original. Nothing to do."
+            [[ "$backup_state" == "none" ]] || rm -f "$backup"
+            exit 0
+        fi
+        [[ "$backup_state" == "valid" ]] || die "No matching backup for this game build.
+Use Steam's 'Verify integrity of game files' to get the original DLL back."
         cp -p "$backup" "$dll"
         rm -f "$backup"
         echo "Original DLL restored. Remove the DOTNET_ReadyToRunExcludeList launch option in Steam."
@@ -115,23 +148,24 @@ esac
 
 echo "DLL: $dll"
 if [[ "$state" == "patched" ]]; then
-    echo "Already patched. Nothing to do."
+    echo "Already patched (build $BUILD_VERSION). Nothing to do."
     print_launch_options
     exit 0
 fi
-[[ "$state" == "original" ]] || die "Unknown VRage.Render12.dll (the game was probably updated).
-This fix only supports build $BUILD. Nothing was changed."
+[[ "$state" == "original" ]] || die "Unknown VRage.Render12.dll (probably a newer game build).
+Supported builds: $supported
+Nothing was changed. Check the repo for an update."
 
-actual="$(od -An -tx1 -v -j "$OFFSET" -N $(( ${#EXPECTED} / 2 )) "$dll" | tr -d ' \n')"
-[[ "$actual" == "$EXPECTED" ]] || die "Unexpected bytes at the patch site. Nothing was changed."
+actual="$(od -An -tx1 -v -j "$BUILD_OFFSET" -N $(( ${#BUILD_EXPECTED} / 2 )) "$dll" | tr -d ' \n')"
+[[ "$actual" == "$BUILD_EXPECTED" ]] || die "Unexpected bytes at the patch site. Nothing was changed."
 
 tmp="$dll.tmp.$$"
 trap 'rm -f "$tmp"' EXIT
 cp -p "$dll" "$tmp"
-printf "$REPLACEMENT" | dd of="$tmp" bs=1 seek="$OFFSET" conv=notrunc status=none
-[[ "$(sha "$tmp")" == "$PATCHED_SHA" ]] || die "Patched file has an unexpected hash. Nothing was changed."
+printf "$REPLACEMENT" | dd of="$tmp" bs=1 seek="$BUILD_OFFSET" conv=notrunc status=none
+[[ "$(sha "$tmp")" == "$BUILD_PATCHED" ]] || die "Patched file has an unexpected hash. Nothing was changed."
 
 cp -p "$dll" "$backup"
 mv "$tmp" "$dll"
-echo "Done. Original saved as VRage.Render12.dll.orig."
+echo "Done (build $BUILD_VERSION). Original saved as VRage.Render12.dll.orig."
 print_launch_options
