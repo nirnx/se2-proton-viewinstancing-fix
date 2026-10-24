@@ -1,5 +1,12 @@
 # Space Engineers 2 on Proton: pink/purple materials and loading hang fix
 
+> **Archived: no longer needed.** Keen fixed this bug in build **4.0.0.3165**: the game now
+> turns off view instancing when it runs under Wine/Proton. If you used this patch, verify the
+> game files in Steam and remove the `DOTNET_ReadyToRunExcludeList=VRage.Render12` launch option.
+>
+> For the fixes that are still needed on Proton (greyed-out ray tracing/DLSS on NVIDIA and the
+> false "Low Memory" warning), see **[se2-proton-fixes](https://github.com/nirnx/se2-proton-fixes)**.
+
 An unofficial workaround for **Space Engineers 2** ("Hostile Encounters" update; supported builds: **4.0.0.3151, 4.0.0.3155**) on Linux with
 Proton / vkd3d-proton. Neither Keen Software House nor the vkd3d-proton project made it or endorses it.
 
