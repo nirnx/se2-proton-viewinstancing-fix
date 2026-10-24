@@ -5,7 +5,7 @@
 > game files in Steam and remove the `DOTNET_ReadyToRunExcludeList=VRage.Render12` launch option.
 >
 > For the fixes that are still needed on Proton (greyed-out ray tracing/DLSS on NVIDIA and the
-> false "Low Memory" warning), see **[se2-proton-fixes](https://github.com/nirnx/se2-proton-fixes)**.
+> false "Low Memory" warning), see **[se2-linux-patches](https://github.com/nirnx/se2-linux-patches)**.
 
 An unofficial workaround for **Space Engineers 2** ("Hostile Encounters" update; supported builds: **4.0.0.3151, 4.0.0.3155**) on Linux with
 Proton / vkd3d-proton. Neither Keen Software House nor the vkd3d-proton project made it or endorses it.
